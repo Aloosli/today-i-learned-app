@@ -51,15 +51,18 @@ function Counter() {
 function App() {
   // 1. define state variable
   const [showForm, setShowForm] = useState(false);
+  const [facts, setFacts] = useState(initialFacts);
 
   return (
     <>
       <Header showForm={showForm} setShowForm={setShowForm} />
-      {showForm ? <NewFactForm /> : null}
+      {showForm ? (
+        <NewFactForm setFacts={setFacts} setShowForm={setShowForm} />
+      ) : null}
 
       <main className="main">
         <CategoryFilter />
-        <FactList />
+        <FactList facts={facts} />
       </main>
     </>
   );
@@ -98,14 +101,48 @@ const CATEGORIES = [
   { name: "history", color: "#f97316" },
   { name: "news", color: "#8b5cf6" },
 ];
-function NewFactForm() {
+function isValidHttpUrl(string) {
+  let url;
+  try {
+    url = new URL(string);
+  } catch (_) {
+    return false;
+  }
+  return url.protocol === "http:" || url.protocol === "https:";
+}
+function NewFactForm({ setFacts, setShowForm }) {
   const [text, setText] = useState("");
-  const [source, setSource] = useState("");
+  const [source, setSource] = useState("http://example.com");
   const [category, setCategory] = useState("");
   const textLength = text.length;
   function handleSubmit(e) {
+    // prevent browser reload
     e.preventDefault();
+
+    // check if data is valid, if so, create new fact
+    if (text && isValidHttpUrl(source) && category && textLength <= 200) {
+      // create new fact object
+      const newFact = {
+        id: Math.round(Math.random() * 1000000),
+        text,
+        source,
+        category,
+        votesInteresting: 0,
+        votesMindblowing: 0,
+        votesFalse: 0,
+        createdIn: new Date().getFullYear(),
+      };
+      // add new fact to UI : add the fact to state
+      setFacts((facts) => [newFact, ...facts]);
+      // reset input fields
+      setSource("");
+      setText("");
+      setCategory("");
+      //close the form
+      setShowForm(false);
+    }
   }
+
   return (
     <form className="fact-form" onSubmit={handleSubmit}>
       <input
@@ -129,7 +166,7 @@ function NewFactForm() {
           </option>
         ))}
       </select>
-      <button class="btn btn-large">Post</button>
+      <button className="btn btn-large">Post</button>
     </form>
   );
 }
@@ -155,9 +192,7 @@ function CategoryFilter() {
     </aside>
   );
 }
-function FactList() {
-  // temporary
-  const facts = initialFacts;
+function FactList({ facts }) {
   return (
     <section>
       <ul className="facts-list">
@@ -165,7 +200,7 @@ function FactList() {
           <Fact key={fact.id} fact={fact} />
         ))}
       </ul>
-      <p>There are {facts.lenght} facts in the database. Add your own!</p>
+      <p>There are {facts.length} facts in the database. Add your own!</p>
     </section>
   );
 }
